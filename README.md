@@ -12,4 +12,4 @@ UBON is a highly efficient, binary serialization format designed to be a simpler
 
 ## Build status
 
-Zero build (proof-of-work) in progress branch (develop-zero)
+Zero build (proof-of-work) in progress branch - develop-zero
