@@ -1,81 +1,58 @@
 package ubonTypes
 
 const (
+	// UBON type length 5 bit UBON Coding [ UBON_TYPE | DATA, UBON_TYPE | DATA ]
 
-	//UBON type length 5 bit
-
-	//Special
-
-	// 1 bit
+	// Special
 	UBON_nilOrNull = 0
-	//Primitives
 
-	// 1 bit
-	UBON_Bool = 1
+	// Primitives (Sorted by size)
+	UBON_Bool = 1 // 1 bit
 
-	// 8 bit
-	UBON_Int8  = 2
-	UBON_UInt8 = 3
+	UBON_Int4  = 2 // 4 bit
+	UBON_UInt4 = 3 // 4 bit
 
-	// 16 bit
-	UBON_Int16  = 4
-	UBON_UInt16 = 5
+	UBON_Int8  = 4 // 8 bit
+	UBON_UInt8 = 5 // 8 bit
 
-	// 32 bit
-	UBON_Int32   = 6
-	UBON_UInt32  = 7 // + rune
-	UBON_Float32 = 8
+	UBON_Int12  = 6 // 12 bit
+	UBON_UInt12 = 7 // 12 bit
 
-	// 64 bit
-	UBON_Int64     = 9
-	UBON_UInt64    = 10
-	UBON_Float64   = 11
-	UBON_Complex64 = 12
+	UBON_Int16  = 8 // 16 bit
+	UBON_UInt16 = 9 // 16 bit
 
-	// 128 bit
-	UBON_Complex128 = 13
+	UBON_Int24  = 10 // 24 bit
+	UBON_UInt24 = 11 // 24 bit
 
-	// Variative length
-	UBON_Array  = 14
-	UBON_Object = 15
+	UBON_Int32   = 12 // 32 bit
+	UBON_UInt32  = 13 // 32 bit (also rune)
+	UBON_Float32 = 14 // 32 bit
 
-	UBON_String = 16 // AKA char array
+	UBON_Int56     = 15 // 56 bit
+	UBON_UInt56    = 16 // 56 bit
+	UBON_Float56   = 17 // 56 bit
+	UBON_Complex56 = 18 // 56 bit
 
-	// Unique half sized types self compressed type only internal used
-	// for example input number int32 value 7 32 bit transformed
-	// to UBON_Int4 value 7 4 bit and restored to int8 if no has layout
-	// (target dictionary string -> any) or filled structre layout
-	// in this example int32
+	UBON_Int64     = 19 // 64 bit
+	UBON_UInt64    = 20 // 64 bit
+	UBON_Float64   = 21 // 64 bit
+	UBON_Complex64 = 22 // 64 bit
 
-	//4 bit
-	UBON_Int4  = 17
-	UBON_UInt4 = 18
+	UBON_Complex128 = 23 // 128 bit
 
-	//12 bit
-	UBON_Int12  = 19
-	UBON_UInt12 = 20
+	UBON_RawData = 24 // raw data array
 
-	//16 bit half
-	UBON_Float16 = 21
+	// Variative length (Strings, Arrays, Objects)
+	UBON_String = 25 // AKA char array
 
-	//24 bit
-	UBON_Int24  = 22
-	UBON_UInt24 = 23
+	UBON_Array  = 26
+	UBON_Object = 27
 
-	// 56 bit
-	UBON_Int56     = 24
-	UBON_UInt56    = 25
-	UBON_Float56   = 26
-	UBON_Complex56 = 27
-
-	// Variative sized section for example array with 50 elements int64 has max bit length 33
-	// this sation can be writed as UBON_VariativeSizedArray | UBON_VariativeSizedInt | 33 |
-	// | elements count | n1 , n2 ... |
-
+	// Variative sized primitives
 	UBON_VariativeSizedInt   = 28
 	UBON_VariativeSizedUInt  = 29
 	UBON_VariativeSizedFloat = 30
 
-	//Special mark for use varitive sized primitives
+	// Special mark for using variative-sized primitives in arrays
 	UBON_VariativeSizedArray = 31
 )
