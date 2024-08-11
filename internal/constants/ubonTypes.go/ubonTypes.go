@@ -1,7 +1,8 @@
 package ubonTypes
 
 const (
-	// UBON type length 5 bit UBON Coding [ UBON_TYPE | DATA, UBON_TYPE | DATA ]
+	// UBON type length 5 bit
+	// base UBON Coding [ STRING_VAR_NAME_LEN | STRING_VAR_NAME | UBON_VAR_TYPE | DATA ]
 
 	// Special
 	UBON_nilOrNull = 0
@@ -40,10 +41,9 @@ const (
 
 	UBON_Complex128 = 23 // 128 bit
 
-	UBON_RawData = 24 // raw data array
-
 	// Variative length (Strings, Arrays, Objects)
-	UBON_String = 25 // AKA char array
+	UBON_RawData = 24 // raw data array
+	UBON_String  = 25 // AKA char array
 
 	UBON_Array  = 26
 	UBON_Object = 27
