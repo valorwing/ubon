@@ -8,24 +8,6 @@ import (
 )
 
 const (
-	CheckReject8To4BitsMask   = 0b00001111
-	CheckReject16To12BitsMask = 0b0000111111111111
-	CheckReject16To8BitsMask  = 0b0000000011111111
-	CheckReject16To4BitsMask  = 0b0000000000001111
-	CheckReject32To24BitsMask = 0b00000000111111111111111111111111
-	CheckReject32To16BitsMask = 0b00000000000000001111111111111111
-	CheckReject32To12BitsMask = 0b00000000000000000000111111111111
-	CheckReject32To8BitsMask  = 0b00000000000000000000000011111111
-	CheckReject32To4BitsMask  = 0b00000000000000000000000000001111
-	//64 - 56
-	//64 - 32
-	//64 - 24
-	//64 - 16
-	//64 - 8
-	//64 - 4
-)
-
-const (
 	// UBON type length 5 bit
 	// base UBON Coding [ STRING_VAR_NAME_LEN | STRING_VAR_NAME | UBON_VAR_TYPE | DATA ]
 
@@ -76,6 +58,24 @@ const (
 	UBON_Object              = uint8(28)
 )
 
+const (
+	CheckReject8To4BitsMask   = 0b00001111
+	CheckReject16To12BitsMask = 0b0000111111111111
+	CheckReject16To8BitsMask  = 0b0000000011111111
+	CheckReject16To4BitsMask  = 0b0000000000001111
+	CheckReject32To24BitsMask = 0b00000000111111111111111111111111
+	CheckReject32To16BitsMask = 0b00000000000000001111111111111111
+	CheckReject32To12BitsMask = 0b00000000000000000000111111111111
+	CheckReject32To8BitsMask  = 0b00000000000000000000000011111111
+	CheckReject32To4BitsMask  = 0b00000000000000000000000000001111
+	CheckReject64To56BitsMask = 0b0000000011111111111111111111111111111111111111111111111111111111
+	CheckReject64To32BitsMask = 0b0000000000000000000000000000000011111111111111111111111111111111
+	CheckReject64To24BitsMask = 0b0000000000000000000000000000000000000000111111111111111111111111
+	CheckReject64To16BitsMask = 0b0000000000000000000000000000000000000000000000001111111111111111
+	CheckReject64To8BitsMask  = 0b0000000000000000000000000000000000000000000000000000000011111111
+	CheckReject64To4BitsMask  = 0b0000000000000000000000000000000000000000000000000000000000001111
+)
+
 var (
 	exampleDefaultInt        = int(0)
 	exampleDefaultUInt       = uint(0)
@@ -104,25 +104,76 @@ func DetectType(object any) (uint8, error) {
 	reflectType := reflect.TypeOf(object)
 	retVal := UBON_nilOrNull
 	var err error = nil
+	kind := reflectType.Kind()
 
-	switch reflectType.Kind() {
-	case reflect.Bool:
+	switch {
+	case kind == reflect.Bool:
 		retVal = UBON_Bool
-	case reflect.Int:
-	case reflect.Int8:
-	case reflect.Int16:
-	case reflect.Int32:
-	case reflect.Int64:
+	case kind == reflect.Int8:
+		casted := object.(int8)
+		retVal = UBON_Int8
+		if (CheckReject8To4BitsMask & casted) == casted {
+			retVal = UBON_Int4
+		}
+	case kind == reflect.Int16:
+		casted := object.(int16)
+		retVal = UBON_Int16
+		if (CheckReject16To4BitsMask & casted) == casted {
+			retVal = UBON_Int4
+		} else if (CheckReject16To8BitsMask & casted) == casted {
+			retVal = UBON_Int8
+		} else if (CheckReject16To12BitsMask & casted) == casted {
+			retVal = UBON_Int12
+		}
+	case kind == reflect.Int32 || (kind == reflect.Int && GetDefaultIntIs32BitsLen()):
+		retVal = UBON_UInt32
+		var casted int32
+		if kind == reflect.Uint {
+			casted = int32(object.(uint))
+		} else {
+			casted = object.(int32)
+		}
+		if (CheckReject32To4BitsMask & casted) == casted {
+			retVal = UBON_Int4
+		} else if (CheckReject32To8BitsMask & casted) == casted {
+			retVal = UBON_Int8
+		} else if (CheckReject32To12BitsMask & casted) == casted {
+			retVal = UBON_Int12
+		} else if (CheckReject32To16BitsMask & casted) == casted {
+			retVal = UBON_Int16
+		} else if (CheckReject32To24BitsMask & casted) == casted {
+			retVal = UBON_Int24
+		}
+	case kind == reflect.Int64 || (kind == reflect.Int && !GetDefaultIntIs32BitsLen()):
+		retVal = UBON_Int64
+		var casted int64
+		if kind == reflect.Int {
+			casted = int64(object.(int))
+		} else {
+			casted = object.(int64)
+		}
 
-	case reflect.Uint:
+		if (CheckReject64To4BitsMask & casted) == casted {
+			retVal = UBON_Int4
+		} else if (CheckReject64To8BitsMask & casted) == casted {
+			retVal = UBON_Int8
+		} else if (CheckReject64To16BitsMask & casted) == casted {
+			retVal = UBON_Int16
+		} else if (CheckReject64To24BitsMask & casted) == casted {
+			retVal = UBON_Int24
+		} else if (CheckReject64To32BitsMask & casted) == casted {
+			retVal = UBON_Int32
+		} else if (CheckReject64To56BitsMask & casted) == casted {
+			retVal = UBON_Int56
+		}
 
-	case reflect.Uint8:
+	case kind == reflect.Uint8:
 		casted := object.(uint8)
 		retVal = UBON_UInt8
 		if (CheckReject8To4BitsMask & casted) == casted {
 			retVal = UBON_UInt4
 		}
-	case reflect.Uint16:
+	case kind == reflect.Uint16:
 		casted := object.(uint16)
 		retVal = UBON_UInt16
 		if (CheckReject16To4BitsMask & casted) == casted {
@@ -132,9 +183,15 @@ func DetectType(object any) (uint8, error) {
 		} else if (CheckReject16To12BitsMask & casted) == casted {
 			retVal = UBON_UInt12
 		}
-	case reflect.Uint32:
+	case kind == reflect.Uint32 || (kind == reflect.Uint && GetDefaultUIntIs32BitsLen()):
 		retVal = UBON_UInt32
-		casted := object.(uint32)
+		var casted uint32
+		if kind == reflect.Uint {
+			casted = uint32(object.(uint))
+		} else {
+			casted = object.(uint32)
+		}
+
 		if (CheckReject32To4BitsMask & casted) == casted {
 			retVal = UBON_UInt4
 		} else if (CheckReject32To8BitsMask & casted) == casted {
@@ -146,37 +203,50 @@ func DetectType(object any) (uint8, error) {
 		} else if (CheckReject32To24BitsMask & casted) == casted {
 			retVal = UBON_UInt24
 		}
-	case reflect.Uint64:
+	case kind == reflect.Uint64 || (kind == reflect.Uint && !GetDefaultUIntIs32BitsLen()):
 		retVal = UBON_UInt64
+		var casted uint64
+		if kind == reflect.Uint {
+			casted = uint64(object.(uint))
+		} else {
+			casted = object.(uint64)
+		}
 
-	case reflect.Float32:
+		if (CheckReject64To4BitsMask & casted) == casted {
+			retVal = UBON_UInt4
+		} else if (CheckReject64To8BitsMask & casted) == casted {
+			retVal = UBON_UInt8
+		} else if (CheckReject64To16BitsMask & casted) == casted {
+			retVal = UBON_UInt16
+		} else if (CheckReject64To24BitsMask & casted) == casted {
+			retVal = UBON_UInt24
+		} else if (CheckReject64To32BitsMask & casted) == casted {
+			retVal = UBON_UInt32
+		} else if (CheckReject64To56BitsMask & casted) == casted {
+			retVal = UBON_UInt56
+		}
+
+	case kind == reflect.Float32:
 		retVal = UBON_Float32
-	case reflect.Float64:
+	case kind == reflect.Float64:
 		retVal = UBON_Float64
-	case reflect.Complex64:
+	case kind == reflect.Complex64:
 		retVal = UBON_Complex64
-	case reflect.Complex128:
+	case kind == reflect.Complex128:
 		retVal = UBON_Complex128
-	case reflect.Array:
-	case reflect.Slice:
+	case kind == reflect.Slice || kind == reflect.Array:
 		retVal = UBON_Array
-	case reflect.String:
+	case kind == reflect.String:
 		retVal = UBON_String
-	case reflect.Map:
-	case reflect.Struct:
+	case kind == reflect.Struct || kind == reflect.Map:
 		retVal = UBON_Object
-	case reflect.Pointer:
+	case kind == reflect.Pointer:
 		reflectValue := reflect.ValueOf(object)
 		if reflectValue.IsNil() {
 			return UBON_nilOrNull, nil
 		}
 		return DetectType(reflectValue.Elem().Interface())
-	case reflect.UnsafePointer:
-	case reflect.Uintptr:
-	case reflect.Invalid:
-	case reflect.Chan:
-	case reflect.Func:
-	case reflect.Interface:
+	default:
 		err = errors.UnsupportedCodingTypeError(reflectType.String() + " can't be serialized")
 	}
 
