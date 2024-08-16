@@ -33,11 +33,11 @@ const (
 	UBON_Int24  = uint8(10) // 24 bit
 	UBON_UInt24 = uint8(11) // 24 bit
 
-	UBON_Float64_28 = uint8(12) // 28 bit
+	UBON_Int32   = uint8(12) // 32 bit
+	UBON_UInt32  = uint8(13) // 32 bit (also rune)
+	UBON_Float32 = uint8(14) // 32 bit
 
-	UBON_Int32   = uint8(13) // 32 bit
-	UBON_UInt32  = uint8(14) // 32 bit (also rune)
-	UBON_Float32 = uint8(15) // 32 bit
+	UBON_Float64_40 = uint8(15) // 40 bit
 
 	UBON_Int56  = uint8(16) // 56 bit
 	UBON_UInt56 = uint8(17) // 56 bit
@@ -58,23 +58,22 @@ const (
 )
 
 const (
-	CheckReject8To4BitsMask   = 0b00001111
-	CheckReject16To12BitsMask = 0b0000111111111111
-	CheckReject16To8BitsMask  = 0b0000000011111111
-	CheckReject16To4BitsMask  = 0b0000000000001111
-	CheckReject32To24BitsMask = 0b00000000111111111111111111111111
-	CheckReject32To16BitsMask = 0b00000000000000001111111111111111
-	CheckReject32To12BitsMask = 0b00000000000000000000111111111111
-	CheckReject32To8BitsMask  = 0b00000000000000000000000011111111
-	CheckReject32To4BitsMask  = 0b00000000000000000000000000001111
-	CheckReject64To56BitsMask = 0b0000000011111111111111111111111111111111111111111111111111111111
-	CheckReject64To32BitsMask = 0b0000000000000000000000000000000011111111111111111111111111111111
-	CheckReject64To24BitsMask = 0b0000000000000000000000000000000000000000111111111111111111111111
-	CheckReject64To16BitsMask = 0b0000000000000000000000000000000000000000000000001111111111111111
-	CheckReject64To8BitsMask  = 0b0000000000000000000000000000000000000000000000000000000011111111
-	CheckReject64To4BitsMask  = 0b0000000000000000000000000000000000000000000000000000000000001111
-
-	CheckReject64To28BitsMask = 0b0000000000000000000000000000000000001111111111111111111111111111
+	CheckReject8To4BitsMask                = 0b00001111
+	CheckReject16To12BitsMask              = 0b0000111111111111
+	CheckReject16To8BitsMask               = 0b0000000011111111
+	CheckReject16To4BitsMask               = 0b0000000000001111
+	CheckReject32To24BitsMask              = 0b00000000111111111111111111111111
+	CheckReject32To16BitsMask              = 0b00000000000000001111111111111111
+	CheckReject32To12BitsMask              = 0b00000000000000000000111111111111
+	CheckReject32To8BitsMask               = 0b00000000000000000000000011111111
+	CheckReject32To4BitsMask               = 0b00000000000000000000000000001111
+	CheckReject64To56BitsMask              = 0b0000000011111111111111111111111111111111111111111111111111111111
+	CheckReject64To32BitsMask              = 0b0000000000000000000000000000000011111111111111111111111111111111
+	CheckReject64To24BitsMask              = 0b0000000000000000000000000000000000000000111111111111111111111111
+	CheckReject64To16BitsMask              = 0b0000000000000000000000000000000000000000000000001111111111111111
+	CheckReject64To8BitsMask               = 0b0000000000000000000000000000000000000000000000000000000011111111
+	CheckReject64To4BitsMask               = 0b0000000000000000000000000000000000000000000000000000000000001111
+	CheckRejectFloatReversed64To40BitsMask = 0b1111111111111111111111111111111111111111000000000000000000000000
 )
 
 var (
@@ -228,13 +227,16 @@ func DetectType(object any) (uint8, error) {
 
 	case kind == reflect.Float32:
 		retVal = UBON_Float32
+
 	case kind == reflect.Float64:
 		retVal = UBON_Float64
 		casted := object.(float64)
-		castedBitsRejected36Bits := math.Float64bits(casted) & CheckReject64To28BitsMask
-		if math.Float64frombits(castedBitsRejected36Bits) == casted {
-			retVal = UBON_Float64_28
+		castedBitsRejected24Bits := CheckRejectFloatReversed64To40BitsMask & math.Float64bits(casted)
+		check := math.Float64frombits(castedBitsRejected24Bits)
+		if check == casted {
+			retVal = UBON_Float64_40
 		}
+
 	case kind == reflect.Complex64:
 		retVal = UBON_Complex64
 	case kind == reflect.Complex128:

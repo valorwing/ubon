@@ -1,9 +1,7 @@
 package ubonTypes_test
 
 import (
-	"log"
 	"runtime"
-	"strings"
 	"testing"
 	"ubon/internal/ubonTypes.go"
 )
@@ -12,8 +10,6 @@ func is64Bit() bool {
 	return runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64"
 }
 func TestDetectDefaultIntsLen(t *testing.T) {
-
-	log.Println(strings.Repeat("0", 64-28) + strings.Repeat("1", 28))
 
 	if is64Bit() {
 		if !ubonTypes.GetDefaultIntIs32BitsLen() && !ubonTypes.GetDefaultUIntIs32BitsLen() {
@@ -106,4 +102,26 @@ func TestUIntCompression(t *testing.T) {
 	if detectedType != ubonTypes.UBON_UInt8 {
 		t.Fail()
 	}
+}
+
+func TestFloat64_28_TypeDetect(t *testing.T) {
+
+	var testData = float64(100)
+	detectedType, err := ubonTypes.DetectType(testData)
+	if err != nil {
+		t.Fail()
+	}
+	if detectedType != ubonTypes.UBON_Float64_40 {
+		t.Fail()
+	}
+
+	testData = float64(505)
+	detectedType, err = ubonTypes.DetectType(testData)
+	if err != nil {
+		t.Fail()
+	}
+	if detectedType != ubonTypes.UBON_Float64_40 {
+		t.Fail()
+	}
+
 }
