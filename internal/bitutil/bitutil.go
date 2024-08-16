@@ -1,6 +1,6 @@
 package bitutil
 
-func writeBitsPrimitive(objectToWrite *[16]byte, writeBitLength uint8, targetArray *[]byte, initalByteOffset uint64, initalBitOffset uint8) {
+func WriteBitsPrimitive(objectToWrite *[16]byte, writeBitLength uint8, targetArray *[]byte, initalByteOffset uint64, initalBitOffset uint8) {
 	target, source := *targetArray, *objectToWrite
 
 	writedBits := uint8(0)
@@ -29,7 +29,7 @@ func writeBitsPrimitive(objectToWrite *[16]byte, writeBitLength uint8, targetArr
 	}
 }
 
-func readBitsPrimitive(objectToRead *[16]byte, readBitLength uint8, arrayToRead *[]byte, initalByteOffset uint64, initalBitOffset uint8) {
+func ReadBitsPrimitive(objectToRead *[16]byte, readBitLength uint8, arrayToRead *[]byte, initalByteOffset uint64, initalBitOffset uint8) {
 	source, target := *arrayToRead, *objectToRead
 
 	readBits := uint8(0)
