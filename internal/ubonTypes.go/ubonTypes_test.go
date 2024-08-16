@@ -1,7 +1,9 @@
 package ubonTypes_test
 
 import (
+	"log"
 	"runtime"
+	"strings"
 	"testing"
 	"ubon/internal/ubonTypes.go"
 )
@@ -10,6 +12,8 @@ func is64Bit() bool {
 	return runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64"
 }
 func TestDetectDefaultIntsLen(t *testing.T) {
+
+	log.Println(strings.Repeat("0", 64-28) + strings.Repeat("1", 28))
 
 	if is64Bit() {
 		if !ubonTypes.GetDefaultIntIs32BitsLen() && !ubonTypes.GetDefaultUIntIs32BitsLen() {
@@ -35,6 +39,20 @@ func TestDetectTypeBoolBase(t *testing.T) {
 		t.Fail()
 	}
 	if detectedType != ubonTypes.UBON_Bool {
+		t.Fail()
+	}
+}
+
+func TestIntPointer(t *testing.T) {
+
+	var a = uint8(255)
+	var aPtr *uint8 = &a
+
+	ubonType, err := ubonTypes.DetectType(aPtr)
+	if err != nil {
+		t.Fail()
+	}
+	if ubonType != ubonTypes.UBON_UInt8 {
 		t.Fail()
 	}
 }

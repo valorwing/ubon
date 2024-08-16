@@ -1,6 +1,7 @@
 package ubonTypes
 
 import (
+	"math"
 	"reflect"
 	"sync"
 	"ubon/internal/errors"
@@ -32,7 +33,7 @@ const (
 	UBON_Int24  = uint8(10) // 24 bit
 	UBON_UInt24 = uint8(11) // 24 bit
 
-	UBON_Float64_28 = uint8(12) //  bit
+	UBON_Float64_28 = uint8(12) // 28 bit
 
 	UBON_Int32   = uint8(13) // 32 bit
 	UBON_UInt32  = uint8(14) // 32 bit (also rune)
@@ -51,11 +52,9 @@ const (
 	// Variative length (Strings, Arrays, Objects)
 	UBON_String = uint8(23) // AKA char array
 
-	UBON_RawData = uint8(24) // raw data array
-
-	UBON_Array               = uint8(25)
-	UBON_VariativeSizedArray = uint8(26)
-	UBON_Object              = uint8(28)
+	UBON_Array               = uint8(24)
+	UBON_VariativeSizedArray = uint8(25)
+	UBON_Object              = uint8(26)
 )
 
 const (
@@ -74,6 +73,8 @@ const (
 	CheckReject64To16BitsMask = 0b0000000000000000000000000000000000000000000000001111111111111111
 	CheckReject64To8BitsMask  = 0b0000000000000000000000000000000000000000000000000000000011111111
 	CheckReject64To4BitsMask  = 0b0000000000000000000000000000000000000000000000000000000000001111
+
+	CheckReject64To28BitsMask = 0b0000000000000000000000000000000000001111111111111111111111111111
 )
 
 var (
@@ -191,7 +192,6 @@ func DetectType(object any) (uint8, error) {
 		} else {
 			casted = object.(uint32)
 		}
-
 		if (CheckReject32To4BitsMask & casted) == casted {
 			retVal = UBON_UInt4
 		} else if (CheckReject32To8BitsMask & casted) == casted {
@@ -230,6 +230,11 @@ func DetectType(object any) (uint8, error) {
 		retVal = UBON_Float32
 	case kind == reflect.Float64:
 		retVal = UBON_Float64
+		casted := object.(float64)
+		castedBitsRejected36Bits := math.Float64bits(casted) & CheckReject64To28BitsMask
+		if math.Float64frombits(castedBitsRejected36Bits) == casted {
+			retVal = UBON_Float64_28
+		}
 	case kind == reflect.Complex64:
 		retVal = UBON_Complex64
 	case kind == reflect.Complex128:
