@@ -7,7 +7,29 @@ import (
 )
 
 func is64Bit() bool {
-	return runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64"
+
+	var arch64 = []string{
+		"amd64",
+		"arm64",
+		"arm64be",
+		"ppc64",
+		"ppc64le",
+		"mips64",
+		"mips64le",
+		"riscv64",
+		"s390x",
+		"sparc64",
+		"wasm"}
+
+	is64BitVal := false
+	for _, arch := range arch64 {
+		if arch == runtime.GOARCH {
+			is64BitVal = true
+			break
+		}
+	}
+
+	return is64BitVal
 }
 func TestDetectDefaultIntsLen(t *testing.T) {
 
