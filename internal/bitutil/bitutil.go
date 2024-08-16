@@ -44,7 +44,7 @@ func ResetBit(b byte, bitPosition uint8) byte {
 	case 7:
 		retVal = b & 0b11111110
 	default:
-		panic("set invalid bit position")
+		panic("reset invalid bit position")
 	}
 	return retVal
 }
@@ -68,7 +68,7 @@ func ReadBit(b byte, bitPosition uint8) bool {
 	case 7:
 		retVal = b & 0b00000001
 	default:
-		panic("set invalid bit position")
+		panic("read invalid bit position")
 	}
 	return retVal != 0
 }
