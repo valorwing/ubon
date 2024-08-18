@@ -147,3 +147,24 @@ func TestFloat64_28_TypeDetect(t *testing.T) {
 	}
 
 }
+
+func TestUnions(t *testing.T) {
+
+	a := 10
+	b := map[string]interface{}{}
+	aType, err := ubonTypes.DetectType(a)
+	if err != nil {
+		t.Fail()
+	}
+	if aType.GetUnion() != ubonTypes.Primitives {
+		t.Fail()
+	}
+	bType, err := ubonTypes.DetectType(b)
+	if err != nil {
+		t.Fail()
+	}
+	if bType.GetUnion() != ubonTypes.Objects {
+		t.Fail()
+	}
+
+}

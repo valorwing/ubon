@@ -8,54 +8,82 @@ import (
 	"unsafe"
 )
 
+type UBON_TYPE uint8
+
 const (
 	// UBON type length 5 bit
 	// base UBON Coding [ STRING_VAR_NAME_LEN | STRING_VAR_NAME | UBON_VAR_TYPE | DATA ]
 
 	// Special
-	UBON_nilOrNull = uint8(0)
+	UBON_nilOrNull = UBON_TYPE(0)
 
 	// Primitives (Sorted by size)
-	UBON_Bool = uint8(1) // 1 bit
+	UBON_Bool = UBON_TYPE(1) // 1 bit
 
-	UBON_Int4  = uint8(2) // 4 bit
-	UBON_UInt4 = uint8(3) // 4 bit
+	UBON_Int4  = UBON_TYPE(2) // 4 bit
+	UBON_UInt4 = UBON_TYPE(3) // 4 bit
 
-	UBON_Int8  = uint8(4) // 8 bit
-	UBON_UInt8 = uint8(5) // 8 bit
+	UBON_Int8  = UBON_TYPE(4) // 8 bit
+	UBON_UInt8 = UBON_TYPE(5) // 8 bit
 
-	UBON_Int12  = uint8(6) // 12 bit
-	UBON_UInt12 = uint8(7) // 12 bit
+	UBON_Int12  = UBON_TYPE(6) // 12 bit
+	UBON_UInt12 = UBON_TYPE(7) // 12 bit
 
-	UBON_Int16  = uint8(8) // 16 bit
-	UBON_UInt16 = uint8(9) // 16 bit
+	UBON_Int16  = UBON_TYPE(8) // 16 bit
+	UBON_UInt16 = UBON_TYPE(9) // 16 bit
 
-	UBON_Int24  = uint8(10) // 24 bit
-	UBON_UInt24 = uint8(11) // 24 bit
+	UBON_Int24  = UBON_TYPE(10) // 24 bit
+	UBON_UInt24 = UBON_TYPE(11) // 24 bit
 
-	UBON_Int32   = uint8(12) // 32 bit
-	UBON_UInt32  = uint8(13) // 32 bit (also rune)
-	UBON_Float32 = uint8(14) // 32 bit
+	UBON_Int32   = UBON_TYPE(12) // 32 bit
+	UBON_UInt32  = UBON_TYPE(13) // 32 bit (also rune)
+	UBON_Float32 = UBON_TYPE(14) // 32 bit
 
-	UBON_Float64_40 = uint8(15) // 40 bit
+	UBON_Float64_40 = UBON_TYPE(15) // 40 bit
 
-	UBON_Int56  = uint8(16) // 56 bit
-	UBON_UInt56 = uint8(17) // 56 bit
+	UBON_Int56  = UBON_TYPE(16) // 56 bit
+	UBON_UInt56 = UBON_TYPE(17) // 56 bit
 
-	UBON_Int64     = uint8(18) // 64 bit
-	UBON_UInt64    = uint8(19) // 64 bit
-	UBON_Float64   = uint8(20) // 64 bit
-	UBON_Complex64 = uint8(21) // 64 bit
+	UBON_Int64     = UBON_TYPE(18) // 64 bit
+	UBON_UInt64    = UBON_TYPE(19) // 64 bit
+	UBON_Float64   = UBON_TYPE(20) // 64 bit
+	UBON_Complex64 = UBON_TYPE(21) // 64 bit
 
-	UBON_Complex128 = uint8(22) // 128 bit
+	UBON_Complex128 = UBON_TYPE(22) // 128 bit
 
 	// Variative length (Strings, Arrays, Objects)
-	UBON_String = uint8(23) // AKA char array
+	UBON_String = UBON_TYPE(23) // AKA char array
 
-	UBON_Array               = uint8(24)
-	UBON_VariativeSizedArray = uint8(25)
-	UBON_Object              = uint8(26)
+	UBON_Array               = UBON_TYPE(24)
+	UBON_VariativeSizedArray = UBON_TYPE(25)
+	UBON_Object              = UBON_TYPE(26)
 )
+
+type UBON_TYPES_UNION uint8
+
+const (
+	Special UBON_TYPES_UNION = iota
+	Primitives
+	Arrays
+	Objects
+)
+
+func (ut UBON_TYPE) IsCorrect() bool {
+	return ut <= UBON_Object
+}
+
+func (ut UBON_TYPE) GetUnion() UBON_TYPES_UNION {
+	if ut == UBON_nilOrNull {
+		return Special
+	} else if ut < UBON_String {
+		return Primitives
+	} else if ut < UBON_Object {
+		return Arrays
+	} else if ut == UBON_Object {
+		return Objects
+	}
+	panic("UBON type out of range valid ubon types")
+}
 
 const (
 	CheckReject8To4BitsMask                = 0b00001111
@@ -99,7 +127,7 @@ func GetDefaultUIntIs32BitsLen() bool {
 	return defaultUIntIs32BitsLen
 }
 
-func DetectType(object any) (uint8, error) {
+func DetectType(object any) (UBON_TYPE, error) {
 
 	reflectType := reflect.TypeOf(object)
 	retVal := UBON_nilOrNull
