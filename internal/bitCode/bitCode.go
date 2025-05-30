@@ -12,11 +12,10 @@ type BitCode struct {
 func NewZeroBitCodeWithLength(length int) BitCode {
 	byteLen := length / 8
 	bitLen := length % 8
-	if bitLen != 0 {
-		byteLen += 1
-	}
 	if bitLen == 0 && byteLen == 0 {
 		byteLen = 1
+	} else {
+		byteLen = byteLen + 1
 	}
 	return BitCode{bitPointer: uint8(bitLen), storage: make([]byte, byteLen)}
 }
@@ -31,6 +30,22 @@ func NewBitCodeWithBoolCode(code ...bool) BitCode {
 	return retVal
 }
 
+func NewBitCodeFromBytes(bytesData ...byte) BitCode {
+	retVal := NewZeroBitCodeWithLength(len(bytesData) * 8)
+	bitPoiner := 0
+	for _, v := range bytesData {
+		for i := 0; i < 8; i++ {
+
+			if (v & (1 << (7 - uint(i%8)))) != 0 {
+				retVal.storage[bitPoiner/8] |= 1 << (7 - uint(bitPoiner%8))
+			}
+
+			bitPoiner++
+		}
+	}
+	return retVal
+}
+
 func (b BitCode) BitLength() int {
 	if len(b.storage) == 0 {
 		return 0
@@ -38,9 +53,8 @@ func (b BitCode) BitLength() int {
 		return int(b.bitPointer)
 	}
 
-	bitLen := len(b.storage) * 8
+	bitLen := (len(b.storage) - 1) * 8
 	if b.bitPointer != 0 {
-		bitLen -= 8
 		bitLen += int(b.bitPointer)
 	}
 
@@ -63,6 +77,30 @@ func (b BitCode) CloneAppend(bit bool) BitCode {
 	return retVal
 }
 
+func (b *BitCode) AppendBitCode(other BitCode) {
+	//fast append
+	oldLen := b.BitLength()
+	bytesAppendCount := 0
+	if len(other.storage) > 1 {
+		bytesAppendCount = len(other.storage) - 1
+	}
+	appendSlice := make([]byte, 0)
+	for i := 0; i < bytesAppendCount; i++ {
+		appendSlice = append(appendSlice, 0)
+	}
+	b.storage = append(b.storage, appendSlice...)
+	b.bitPointer += other.bitPointer
+	if b.bitPointer >= 8 {
+		b.bitPointer -= 8
+		b.storage = append(b.storage, 0)
+	}
+	for i := 0; i < other.BitLength(); i++ {
+		if other.GetBit(i) {
+			b.SetBit(oldLen + i)
+		}
+	}
+}
+
 func (b *BitCode) Append(bit bool) {
 	if bit {
 		b.storage[len(b.storage)-1] |= 1 << (7 - uint(b.bitPointer%8))
@@ -72,6 +110,11 @@ func (b *BitCode) Append(bit bool) {
 		b.bitPointer = 0
 		b.storage = append(b.storage, 0)
 	}
+}
+
+func (b BitCode) GetBit(i int) bool {
+	bit := (b.storage[i/8] & (1 << (7 - uint(i%8)))) != 0
+	return bit
 }
 
 // debug
@@ -88,9 +131,26 @@ func (b BitCode) String() string {
 	return retVal
 }
 
+func (b *BitCode) Clear() {
+	b.storage = b.storage[:1]
+	b.bitPointer = 0
+	b.storage[0] = 0
+}
+
 func (b BitCode) Equal(other BitCode) bool {
 	//i'm lazy yeah yeah yeah
 	return b.bitPointer == other.bitPointer && bytes.Equal(b.storage, other.storage)
+}
+
+func (b BitCode) Bytes() []byte {
+	if len(b.storage) == 0 {
+		return nil
+	}
+	end := len(b.storage) - 1
+	if b.bitPointer > 0 {
+		end++
+	}
+	return b.storage[:end]
 }
 
 func (b BitCode) ReadSerialized(offset, maxReadLen int) (value byte, readedBits int, hasNext bool) {
