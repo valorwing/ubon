@@ -263,7 +263,19 @@ func encodeNestedObject(input map[string]interface{}, ws *writeOnlyBitStream.Wri
 }
 
 // []any
+
+//ARRAYS
+//ARRAYS OF PRIMITIVE
+//	[OP_CODE_ARRAY][OP_CODE_PRIMITIVE][ARRAY_LEN_PREFIX][ARRAY_LEN_UINT][PRIMITIVES...ARRAY_LEN]
+//ARRAYS OF OBJECTS
+// [OP_CODE_ARRAY][OP_CODE_OBJECT][OP_CODE|NAME object_fields_pair 3bits + EOS string while reached OP_CODE_SPECIAL]
+// [OPTIONAL_MASK_FEATURE flag 1 bit][all optinal functional not writed if OPTIONAL_FLAG == 0 OPTIONAL_MASK - bits array len object_fields_pair and indicated positive flags for option mask object example][ARRAY_LEN_PREFIX][ARRAY_LEN_UINT] | [OBJECT EXAMPLE OPTION MASK (only enabled) and OBJECT_DATA ordered by object_fields_pair] * ARRAY_LEN|
+// MULTIDIMENTIONAL
+// nested frame description like [OP_CODE_ARRAY] open brace [OP_CODE_SPECIAL] close brace
+//
+
 func encodeArrayFirst(input []interface{}) ([]byte, error) {
+
 	ws := writeOnlyBitStream.NewWriteOnlyBitStream()
 	isAlphabetRequired := false
 	//TODO: implement alphabet detection primitive arrays no need alphabet
