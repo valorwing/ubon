@@ -181,3 +181,36 @@ func (b BitCode) ReadSerialized(offset, maxReadLen int) (value byte, readedBits 
 	hasNext = i < b.BitLength()
 	return
 }
+
+func (b BitCode) Hash() uint64 {
+	var h uint64 = 146527
+	const prime uint64 = 1099511628211
+
+	fullBytes := len(b.storage) - 1
+	if fullBytes < 0 {
+		fullBytes = 0
+	}
+
+	for i := 0; i < fullBytes; i++ {
+		h ^= uint64(b.storage[i])
+		h *= prime
+	}
+
+	if len(b.storage) > 0 {
+		lastIdx := len(b.storage) - 1
+		if b.bitPointer == 0 {
+
+			h ^= uint64(b.storage[lastIdx])
+			h *= prime
+		} else {
+			mask := byte(0xFF) << (8 - b.bitPointer)
+			masked := b.storage[lastIdx] & mask
+			h ^= uint64(masked)
+			h *= prime
+			h ^= uint64(b.bitPointer)
+			h *= prime
+		}
+	}
+
+	return h
+}

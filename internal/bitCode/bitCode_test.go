@@ -6,8 +6,27 @@ import (
 	"strings"
 	"testing"
 	bitcode "ubon/internal/bitCode"
-	"ubon/internal/huffman"
 )
+
+func TestHash(t *testing.T) {
+	aBytes := []byte{0, 134, 255}
+	aBitcode := bitcode.NewBitCodeFromBytes(aBytes...)
+	bBitcode := aBitcode.Clone()
+	if aBitcode.Hash() != bBitcode.Hash() {
+		t.Fail()
+	}
+	bBitcode.Append(false)
+	if aBitcode.Hash() == bBitcode.Hash() {
+		t.Fail()
+	}
+
+	//empty
+	aBitcode = bitcode.NewZeroBitCodeWithLength(0)
+	bBitcode = bitcode.NewZeroBitCodeWithLength(0)
+	if aBitcode.Hash() != bBitcode.Hash() {
+		t.Fail()
+	}
+}
 
 func TestByteEquality(t *testing.T) {
 	aBytes := []byte{0, 134, 255}
@@ -55,15 +74,6 @@ func TestFromBytes(t *testing.T) {
 	if aBitCodeStr != aStr {
 		t.Fail()
 	}
-
-	controlBytes := []byte(huffman.EOS_Char)
-
-	controlBitcode := bitcode.NewBitCodeFromBytes(controlBytes...)
-	fmt.Println("Control: ", controlBitcode.String())
-
-	catBytes := []byte("🐱")
-	catBitcode := bitcode.NewBitCodeFromBytes(catBytes...)
-	fmt.Println("Cat: ", catBitcode.String())
 }
 
 func TestZero(t *testing.T) {

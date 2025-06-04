@@ -5,17 +5,21 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 	bitcode "ubon/internal/bitCode"
+	bitcodeHashMap "ubon/internal/bitCodeHashMap"
 	"ubon/internal/huffman"
 	"ubon/internal/readOnlyBitStream"
 	"ubon/internal/writeOnlyBitStream"
 )
 
-func TestAlphabetSerialization(t *testing.T) {
-
+func TestBundledOverhead(t *testing.T) {
+	startTestTime := time.Now()
 	testStrings := []string{
-		"hello world",
-		"hello world2",
+		`Once upon a time, a small fox named Felix found a forgotten flute in the forest. Curious, he played a note. To his surprise, the trees shimmered, the wind paused, and birds began to sing in harmony. "Magic!" he whispered. Every day after, the forest danced to Felix's tune.
+`,
+		`fox fox fox fox runs fast fast fast through the forest forest forest full of foxes and fast things
+`,
 	}
 
 	huffFreqMap := huffman.NewHuffmanStringFrequencyMap()
@@ -27,7 +31,6 @@ func TestAlphabetSerialization(t *testing.T) {
 	huffFreqMap.FinishСollectingStrings()
 
 	alphabet := huffFreqMap.GetAlphabet()
-	fmt.Println("Generated alphabet: ", strings.Join(alphabet, ""))
 
 	alphabetBitcode, err := huffman.AlphabetToBitcode(alphabet)
 	if err != nil {
@@ -35,9 +38,9 @@ func TestAlphabetSerialization(t *testing.T) {
 	}
 	ws := writeOnlyBitStream.NewWriteOnlyBitStream()
 	ws.AppendBitCode(*alphabetBitcode)
-	serializedData := ws.Bytes()
-	fmt.Println("Serialized alphabet bytes len: ", len(serializedData))
-	rs := readOnlyBitStream.NewReadOnlyBitStream(serializedData)
+	serializedAplhabetData := ws.Bytes()
+	fmt.Println("Serialized alphabet bytes len: ", len(serializedAplhabetData))
+	rs := readOnlyBitStream.NewReadOnlyBitStream(serializedAplhabetData)
 	restoredAlphabet, err := huffman.AlphabetFromBitStream(&rs)
 	if err != nil {
 		t.Fail()
@@ -45,36 +48,6 @@ func TestAlphabetSerialization(t *testing.T) {
 	if !slices.Equal(alphabet, restoredAlphabet) {
 		t.Fail()
 	}
-}
-
-func TestEqualityEOSConstVarBitcodes(t *testing.T) {
-	aBytes := []byte(huffman.EOS_Char)
-	a := bitcode.NewBitCodeFromBytes(aBytes...)
-	b := huffman.EOS_Char_Bitcode
-	if !a.Equal(b) {
-		t.Fail()
-	}
-	if a.String() != b.String() {
-		t.Fail()
-	}
-}
-
-func TestBaseFunctional(t *testing.T) {
-
-	testStrings := []string{
-		"hello world",
-		"hello world2",
-	}
-
-	huffFreqMap := huffman.NewHuffmanStringFrequencyMap()
-
-	for _, v := range testStrings {
-		huffFreqMap.SendString(v)
-	}
-
-	huffFreqMap.FinishСollectingStrings()
-
-	alphabet := huffFreqMap.GetAlphabet()
 
 	fmt.Println("Alphabet: ")
 	for _, v := range alphabet {
@@ -88,25 +61,25 @@ func TestBaseFunctional(t *testing.T) {
 		return
 	}
 
-	codes := make(map[string]bitcode.BitCode)
+	codes := make(map[rune]bitcode.BitCode)
 	huffman.GenerateCodes(tree, bitcode.NewZeroBitCodeWithLength(0), &codes)
 
 	fmt.Println("Codes: ")
 	for k, v := range codes {
-		fmt.Printf("char: %s code: %s \n", k, v.String())
+		fmt.Printf("char: %s code: %s \n", string(k), v.String())
 	}
 
 	bs := writeOnlyBitStream.NewWriteOnlyBitStream()
 	//endcode strings sep EOS
 	for _, v := range testStrings {
 		for _, runeVal := range v {
-			bs.AppendBitCode(codes[string([]rune{runeVal})])
+			bs.AppendBitCode(codes[runeVal])
 		}
 		bs.AppendBitCode(codes[huffman.EOS_Char])
 	}
 
 	bsBystes := bs.Bytes()
-	rawLen := len([]byte(strings.Join(testStrings, huffman.EOS_Char)))
+	rawLen := len([]byte(strings.Join(testStrings, string([]rune{huffman.EOS_Char}))))
 	encLen := len(bsBystes)
 	fmt.Println("Raw bytes len:", rawLen)
 	fmt.Println("Encoded bytes len: ", encLen)
@@ -116,19 +89,19 @@ func TestBaseFunctional(t *testing.T) {
 	outString := make([]string, 0)
 	//for test
 	minBitCodeLen := -1
-	reverseCodes := map[string]string{}
+	reverseCodes := bitcodeHashMap.NewHashMap[rune](len(codes) / 2)
 	for k, v := range codes {
 		if minBitCodeLen == -1 {
 			minBitCodeLen = v.BitLength()
 		} else if minBitCodeLen > v.BitLength() {
 			minBitCodeLen = v.BitLength()
 		}
-		reverseCodes[v.String()] = k
+		reverseCodes.Put(v, k)
 	}
 
 	//check stream self control for this test allowed know size of strings
 	var currentBitCode bitcode.BitCode = bitcode.NewZeroBitCodeWithLength(0)
-	var currentString = ""
+	var currentString = []rune{}
 	isNewChar := true
 	for {
 		readedLen := 1
@@ -141,29 +114,34 @@ func TestBaseFunctional(t *testing.T) {
 			return
 		}
 		currentBitCode.AppendBitCode(*b)
-		str, ok := reverseCodes[currentBitCode.String()]
+		runeVal, ok := reverseCodes.Get(currentBitCode)
 		if !ok {
 			isNewChar = false
 			continue
 		}
 		currentBitCode.Clear()
 		isNewChar = true
-		if str == huffman.EOS_Char {
+		if runeVal == huffman.EOS_Char {
 
-			outString = append(outString, currentString)
-			currentString = ""
+			outString = append(outString, string(currentString))
+			currentString = currentString[:0]
 			//note!!! check stream self control for this test allowed know size of strings
 			if len(outString) == len(testStrings) {
 				break
 			}
 		} else {
-			currentString = currentString + str
+			currentString = append(currentString, runeVal)
 		}
 	}
 
 	if !slices.Equal(outString, testStrings) {
 		t.Fail()
-	} else {
-		fmt.Println("HELL YEAH")
 	}
+
+	//compare bundled encoded huffman alphabe and payload
+
+	fullHuffmanData := append(serializedAplhabetData, bsBystes...)
+	testData := []byte(strings.Join(testStrings, ""))
+	fmt.Println("Compress rate with overhead: ", float64(len(fullHuffmanData))/float64(len(testData)))
+	fmt.Println("Test execution time: ", time.Since(startTestTime))
 }

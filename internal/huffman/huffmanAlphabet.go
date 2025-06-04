@@ -6,19 +6,16 @@ import (
 	"ubon/internal/readOnlyBitStream"
 )
 
-const EOS_Char string = "\u001A"
+const EOS_Char rune = '\u001A'
 
 var EOS_Char_Bitcode bitcode.BitCode = bitcode.NewBitCodeWithBoolCode(false, false, false, true, true, false, true, false)
 
-func AlphabetToBitcode(alphabet []string) (*bitcode.BitCode, error) {
-	retValBitcode := bitcode.NewZeroBitCodeWithLength(0)
+func AlphabetToBitcode(alphabet []rune) (*bitcode.BitCode, error) {
 	eosCharCount := 0
 	for _, s := range alphabet {
 		if s == EOS_Char {
 			eosCharCount++
 		}
-		data := []byte(s)
-		retValBitcode.AppendBitCode(bitcode.NewBitCodeFromBytes(data...))
 	}
 	//single EOS_Char Required
 	if eosCharCount != 1 {
@@ -28,7 +25,10 @@ func AlphabetToBitcode(alphabet []string) (*bitcode.BitCode, error) {
 			return nil, errors.New("alphabet serialization protocol error. The \u001A character may be mentioned in a string or variable name")
 		}
 	}
-	retValBitcode.AppendBitCode(EOS_Char_Bitcode)
+
+	alphabetBytes := []byte(string(append(alphabet, EOS_Char)))
+	retValBitcode := bitcode.NewBitCodeFromBytes(alphabetBytes...)
+
 	return &retValBitcode, nil
 }
 
@@ -38,7 +38,7 @@ func AlphabetToBitcode(alphabet []string) (*bitcode.BitCode, error) {
 //  2. Its second occurrence marks the end of the alphabet and the beginning of payload.
 //
 // This ensures fixed-width 8-bit alignment for symbols without requiring a separate length prefix.
-func AlphabetFromBitStream(bs *readOnlyBitStream.ReadOnlyBitStream) ([]string, error) {
+func AlphabetFromBitStream(bs *readOnlyBitStream.ReadOnlyBitStream) ([]rune, error) {
 	findFirstEOS := false
 	alphabetBytes := make([]byte, 0)
 	for {
@@ -59,9 +59,9 @@ func AlphabetFromBitStream(bs *readOnlyBitStream.ReadOnlyBitStream) ([]string, e
 
 	}
 	alphabetString := string(alphabetBytes)
-	alphabet := make([]string, 0, len(alphabetString))
+	alphabet := make([]rune, 0, len(alphabetString))
 	for _, s := range alphabetString {
-		alphabet = append(alphabet, string(s))
+		alphabet = append(alphabet, s)
 	}
 	return alphabet, nil
 }

@@ -12,11 +12,11 @@ const (
 )
 
 type HuffmanStringFrequencyMap struct {
-	frequencyMap              map[string]uint32
+	frequencyMap              map[rune]uint32
 	receiveStringStatsChannel chan string
 	ctx                       context.Context
 	ctxCancelFunction         func()
-	alphabet                  []string
+	alphabet                  []rune
 	alphabetCondMutex         sync.Mutex
 	alphabetCond              sync.Cond
 	alphabetReady             bool
@@ -26,7 +26,7 @@ func NewHuffmanStringFrequencyMap() *HuffmanStringFrequencyMap {
 	ctx, ctxCancelFunction := context.WithCancel(context.Background())
 
 	retVal := &HuffmanStringFrequencyMap{
-		frequencyMap:              map[string]uint32{},
+		frequencyMap:              map[rune]uint32{},
 		receiveStringStatsChannel: make(chan string, receiveBufLen),
 		ctx:                       ctx,
 		ctxCancelFunction:         ctxCancelFunction,
@@ -46,7 +46,7 @@ func (fm *HuffmanStringFrequencyMap) FinishСollectingStrings() {
 	fm.ctxCancelFunction()
 }
 
-func (fm *HuffmanStringFrequencyMap) GetAlphabet() []string {
+func (fm *HuffmanStringFrequencyMap) GetAlphabet() []rune {
 	fm.alphabetCond.L.Lock()
 	defer fm.alphabetCond.L.Unlock()
 	for !fm.alphabetReady {
@@ -76,18 +76,18 @@ func (fm *HuffmanStringFrequencyMap) collectLoop() {
 func (fm *HuffmanStringFrequencyMap) collectValue(value string) {
 
 	for _, runeVal := range value {
-		fm.frequencyMap[string([]rune{runeVal})]++
+		fm.frequencyMap[runeVal]++
 	}
 	//Add EOS to stat after any string
 	fm.frequencyMap[EOS_Char]++
 }
 
 func (fm *HuffmanStringFrequencyMap) finishAndBuildAlphabet() {
-	alphabet := []string{}
+	alphabet := []rune{}
 	for k := range fm.frequencyMap {
 		alphabet = append(alphabet, k)
 	}
-	slices.SortFunc(alphabet, func(a, b string) int {
+	slices.SortFunc(alphabet, func(a, b rune) int {
 		if fm.frequencyMap[a] < fm.frequencyMap[b] {
 			return -1
 		} else if fm.frequencyMap[a] > fm.frequencyMap[b] {
