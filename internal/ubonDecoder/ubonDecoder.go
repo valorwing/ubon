@@ -99,7 +99,7 @@ func decodeNestedObject(rs *readOnlyBitStream.ReadOnlyBitStream, reverseCodes *b
 				//zero nil value
 				currentVal = nil
 			} else {
-				//enc object
+				//end object
 				break
 			}
 		} else if opCode.Equal(ubonOpCodes.UBON_OP_NEXT_BOOLEAN) {
