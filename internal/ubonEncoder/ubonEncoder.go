@@ -282,7 +282,11 @@ func encodeArrayFirst(input []interface{}) ([]byte, error) {
 	header := ubonHeader.NewDefaultUbonHeader(true)
 	//TODO: implement array
 	//stub
+
 	_, _, _ = header, isAlphabetRequired, ws
+
+	//steps scan array and detect type
+
 	return nil, nil
 }
 

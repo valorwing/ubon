@@ -29,9 +29,11 @@ func TestHash(t *testing.T) {
 }
 
 func TestByteEquality(t *testing.T) {
-	aBytes := []byte{0, 134, 255}
+	aBytes := []byte{0, 134, 255, 123, 36, 35, 12, 11, 0, 56, 67}
 	aBitcode := bitcode.NewBitCodeFromBytes(aBytes...)
-	if !bytes.Equal(aBytes, aBitcode.Bytes()) {
+
+	bitCodeBytes := aBitcode.Bytes()
+	if !bytes.Equal(aBytes, bitCodeBytes) {
 		t.Fail()
 	}
 }
