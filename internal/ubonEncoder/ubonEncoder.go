@@ -262,22 +262,126 @@ func encodeNestedObject(input map[string]interface{}, ws *writeOnlyBitStream.Wri
 	return nil
 }
 
+func isPrimitive(val interface{}) bool {
+	//isInt
+	_, ok := val.(int)
+	if ok {
+		return ok
+	}
+	//isInt8
+	_, ok = val.(int8)
+	if ok {
+		return ok
+	}
+	//isInt16
+	_, ok = val.(int16)
+	if ok {
+		return ok
+	}
+	//isInt32
+	_, ok = val.(int32)
+	if ok {
+		return ok
+	}
+	//isInt64
+	_, ok = val.(int64)
+	if ok {
+		return ok
+	}
+	//isUInt
+	_, ok = val.(uint)
+	if ok {
+		return ok
+	}
+	//isUInt8
+	_, ok = val.(uint8)
+	if ok {
+		return ok
+	}
+	//isUInt16
+	_, ok = val.(uint16)
+	if ok {
+		return ok
+	}
+	//isUInt32
+	_, ok = val.(uint32)
+	if ok {
+		return ok
+	}
+	//isUInt64
+	_, ok = val.(uint64)
+	if ok {
+		return ok
+	}
+	//isFloat32
+	_, ok = val.(float32)
+	if ok {
+		return ok
+	}
+	//isFloat64
+	_, ok = val.(float64)
+	if ok {
+		return ok
+	}
+	//isBool
+	_, ok = val.(bool)
+	if ok {
+		return ok
+	}
+
+	return false
+}
+
+func encodeNestedArray(input []interface{}) ([]byte, error) {
+	return nil, nil
+}
+
 // []any
 
-//ARRAYS
-//ARRAYS OF PRIMITIVE
-//	[OP_CODE_ARRAY][OP_CODE_PRIMITIVE][ARRAY_LEN_PREFIX][ARRAY_LEN_UINT][PRIMITIVES...ARRAY_LEN]
-//ARRAYS OF OBJECTS
-// [OP_CODE_ARRAY][OP_CODE_OBJECT][OP_CODE|NAME object_fields_pair 3bits + EOS string while reached OP_CODE_SPECIAL]
-// [OPTIONAL_MASK_FEATURE flag 1 bit][all optinal functional not writed if OPTIONAL_FLAG == 0 OPTIONAL_MASK - bits array len object_fields_pair and indicated positive flags for option mask object example][ARRAY_LEN_PREFIX][ARRAY_LEN_UINT] | [OBJECT EXAMPLE OPTION MASK (only enabled) and OBJECT_DATA ordered by object_fields_pair] * ARRAY_LEN|
-// MULTIDIMENTIONAL
-// nested frame description like [OP_CODE_ARRAY] open brace [OP_CODE_SPECIAL] close brace
-//
+//LEGEND
+// T - type opcode K - string encoded with EOS String Key
+//[T|K Object] - type keys object pairs
+//[OPTIONAL_ORDERED_FLAGS] - object fields can be optional with same size and order in [T|K Object] element bit 0/1 where 0 - always reqired 1 - can be optional
+//OPTIONAL_FIELD_ORDERED_FLAGS - with positive bits from OPTIONAL_ORDERED_FLAGS and incacted at this object example contains optinal filed - 1 enabled - 0 disabled at original order
+//Scheme
+//[OP_ARRAY][OP_ARRAY][LENGTH] - multidimentional in each element
+//[OP_ARRAY][OP_OBJECT][T|K Object][OP_SPECIAL_AS_END][OPTIONAL_FLAG][OPTIONAL_ORDERED_FLAGS][LENGTH] (OPTIONAL_FIELD_ORDERED_FLAGS|ObjectsPAYLOADS) object array
+//[OP_ARRAY][OP_INT][LENGTH] PrimitivesPayloads - primirive array
+//[OP_ARRAY][OP_OBJECT][T|K Object][OP_SPECIAL_AS_END][OPTIONAL_FLAG_ZERO][LENGTH] ObjectsPAYLOADS - object array
+//[OP_ARRAY][OP_SPECIAL] - specail case empty array
 
 func encodeArrayFirst(input []interface{}) ([]byte, error) {
 
-	ws := writeOnlyBitStream.NewWriteOnlyBitStream()
-	isAlphabetRequired := false
+	if len(input) == 0 {
+		//empty array special case
+		//[OP_ARRAY][OP_SPECIAL]
+		ws := writeOnlyBitStream.NewWriteOnlyBitStream()
+		header := ubonHeader.NewDefaultUbonHeader(false)
+		ws.AppendBitCode(header.BitCode())
+		ws.AppendBitCode(ubonOpCodes.UBON_OP_NEXT_ARRAY)
+		ws.AppendBitCode(ubonOpCodes.UBON_OP_NEXT_SPECIAL)
+		return ws.Bytes(), nil
+	} else if _, ok := input[0].([]interface{}); ok {
+		//array of arrays encode nested
+		//[OP_ARRAY][OP_ARRAY][LENGTH]
+		ws := writeOnlyBitStream.NewWriteOnlyBitStream()
+		header := ubonHeader.NewDefaultUbonHeader(false)
+		ws.AppendBitCode(header.BitCode())
+		ws.AppendBitCode(ubonOpCodes.UBON_OP_NEXT_ARRAY)
+		ws.AppendBitCode(ubonOpCodes.UBON_OP_NEXT_ARRAY)
+		//Write len prefixed
+		len := uint64(len(input))
+		err := uIntEncoderHelper.WriteAutoUnsignedIntToBitStream(len, ws)
+		if err != nil {
+			return nil, err
+		}
+		for _, val := range input {
+			encodeNestedArray(val, ws)
+		}
+
+		return ws.Bytes(), nil
+	}
+
 	//TODO: implement alphabet detection primitive arrays no need alphabet
 	header := ubonHeader.NewDefaultUbonHeader(true)
 	//TODO: implement array
